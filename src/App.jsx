@@ -5,6 +5,7 @@ import { ScatterplotLayer } from '@deck.gl/layers';
       import * as maplibregl from 'maplibre-gl';
    import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from './supabase';
+   maplibregl.setWorkerUrl('/maplibre-gl-worker.mjs');
 
 const INITIAL_VIEW_STATE = {
   longitude: -58.4200,
