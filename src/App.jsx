@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import DeckGL from '@deck.gl/react';
 import { ScatterplotLayer } from '@deck.gl/layers';
+import { HeatmapLayer } from '@deck.gl/aggregation-layers';
    import Map from 'react-map-gl/maplibre';
       import * as maplibregl from 'maplibre-gl';
    import 'maplibre-gl/dist/maplibre-gl.css';
@@ -19,6 +20,7 @@ export default function App() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tooltip, setTooltip] = useState(null);
+  const [vista, setVista] = useState('puntos');
 
   useEffect(() => {
     async function fetchData() {
@@ -65,9 +67,20 @@ const colisionesCriticas = data.filter(d => (Number(d.valor) || 0) >= 20000).len
       onHover: info => setTooltip(info.object ? info : null)
     })
   ];
+const heatmapLayer = new HeatmapLayer({
+  id: 'mapa-de-calor',
+  data,
+  getPosition: d => [Number(d.longitud), Number(d.latitud)],
+  getWeight: d => Number(d.valor) || 0,
+  radiusPixels: 60,
+  intensity: 1,
+  threshold: 0.05,
+  aggregation: 'SUM'
+});
 
+const capas = vista === 'puntos' ? layers : [heatmapLayer];
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: 'sans-serif' }}>
+    <div style={{ position: 'relative', width:'100%', height: '100%', overflow: 'hidden', fontFamily: 'sans-serif' }}>
       <div style={{
         position: 'absolute',
         top: 16,
@@ -110,6 +123,26 @@ const colisionesCriticas = data.filter(d => (Number(d.valor) || 0) >= 20000).len
         </div>
       </div>
 
+      <div style={{ position: 'absolute', bottom: 40, left: 16, zIndex: 10, display: 'flex', gap: 8 }}>
+  {[['puntos', 'Puntos'], ['calor', 'Mapa de calor']].map(([clave, texto]) => (
+    <button
+      key={clave}
+      onClick={() => { setVista(clave); setTooltip(null); }}
+      style={{
+        padding: '8px 14px',
+        borderRadius: '8px',
+        border: 'none',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        backgroundColor: vista === clave ? '#2563eb' : 'rgba(255,255,255,0.95)',
+        color: vista === clave ? '#fff' : '#1e293b',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+      }}
+    >
+      {texto}
+    </button>
+  ))}
+</div>
       {tooltip && (
         <div style={{
           position: 'absolute',
@@ -133,7 +166,7 @@ const colisionesCriticas = data.filter(d => (Number(d.valor) || 0) >= 20000).len
       <DeckGL
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
-        layers={layers}
+           layers={capas}
       >
    <Map mapLib={maplibregl} mapStyle="https://tiles.openfreemap.org/styles/liberty" />
       </DeckGL>
